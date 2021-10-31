@@ -1,45 +1,43 @@
 @font-face {
-	font-family: 'matrix_code';
-	src: url('matrix_code.woff2') format('woff2'),
-		 url('matrix_code.woff') format('woff');
-	font-weight: normal;
-	font-style: normal;
+    font-family: 'matrix_code';
+    src: url('matrix_code.woff2') format('woff2'), url('matrix_code.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
 }
 
 @font-face {
-	font-family: 'matrix_courier';
-	src: url('matrix_courier.woff2') format('woff2'),
-		 url('matrix_courier.woff') format('woff');
-	font-weight: bold;
-	font-style: normal;
+    font-family: 'matrix_courier';
+    src: url('matrix_courier.woff2') format('woff2'), url('matrix_courier.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
 }
 
-#pf1 {
-	font-family: 'matrix_code';
-	opacity:0;
-	height:0;
-	width:0;
+#preload_courier {
+    font-family: 'matrix_courier';
+    opacity: 0;
+    height: 0;
+    width: 0;
 }
 
-#pf2 {
-	font-family: 'matrix_courier';
-	opacity:0;
-	height:0;
-	width:0;
+#preload_code {
+    font-family: 'matrix_code';
+    opacity: 0;
+    height: 0;
+    width: 0;
 }
 
 * {
-	margin: 0;
-	padding: 0;
+    margin: 0;
+    padding: 0;
 }
 
 html, body {
-	background: black;
-	width: 100%;
-	height: 100%;
-	overflow: hidden;
+    background: black;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 canvas {
-	display: block;
+    display: block;
 }

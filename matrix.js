@@ -1,208 +1,186 @@
 // charset
-var matrixcode = "abcdefghijklmnopqrstuvwxyz012345678989$+-*/=%\x22#&_(),.;:?!\|{}<>[]^~\x27";
-matrixcode = matrixcode.split("");
+const matrixAlphabet = "abcdefghijklmnopqrstuvwxyz123456789890~!#$%^&*()-_=+[]{};:\'\",.<>/?\\|".split("");
 
 // spacing around chars
-var horsize = 11;
-var versize = 18;
+const horsize = 11;
+const versize = 19;
 
-// density of columns
-var density = 5;
+// rain density - lower the better
+const rainDensity = 4;
 
-function sleep(time) {
-	return new Promise((resolve) => setTimeout(resolve, time));
+function sleep(milliseconds) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
 function randInt(max) {
-	return Math.floor(Math.random() * max);
+  return Math.floor(Math.random() * max);
 }
+
 
 class Column {
 
-	// generate new set of random chars
-	newchars(vsize) {
-		this.chars = [];
-		for (var i = 0; i < vsize; i++) {
-			this.chars.push(matrixcode[randInt(matrixcode.length)]);
-		}
-	}
+  constructor(numChars, numCols) {
+    // fill column with chars
+    this.setChars(numChars);
+    // random start off screen
+    this.delay = randInt(numCols * rainDensity * 2);
+    // mostly at same speed: occasional slow ones
+    this.speed = !randInt(4) ? 1 : 0;
+    // position at top of screen
+    this.position = 0;
+  }
 
-	constructor(vsize, numcols) {
+  setChars(numChars) {
+    // generate new set of random chars
+    this.chars = [];
+    for (let i = 0; i < numChars; i++) {
+      this.chars.push(matrixAlphabet[randInt(matrixAlphabet.length)]);
+    }
+  }
 
-		this.newchars(vsize);
-
-		// mostly at same speed: occasional slow ones
-		if (!randInt(4))
-			this.speed = 1;
-		else
-			this.speed = 0;
-
-		// random start off screen
-		this.delay = randInt(numcols * density);
-
-		this.position = 0;
-	}
-};
-
-document.addEventListener("DOMContentLoaded", function() {
-
-	var c = document.getElementById("c");
-	var ctx = c.getContext("2d");
-
-	function output(text, horpos, verpos) {
-		ctx.fillText(text, horpos, verpos);
-	}
-
-	function erase(horpos, verpos) {
-		ctx.clearRect(horpos, verpos, horsize, versize);
-	}
-
-	function intro() {
-
-		// can't wait for the 'await' function...
-		var text = "Wake up, Neo...".split("");
-		renderIntro(text, 0).then(function(value) {
-			if (value) {
-				sleep(2000).then(() => {
-					ctx.clearRect(0, 0, c.width, c.height);
-					text = "The Matrix has you...".split("");
-					renderIntro(text, 0).then(function(value) {
-						if (value) {
-							sleep(2000).then(() => {
-								window.addEventListener('resize', resizeCanvas, false);
-								resizeCanvas();
-								window.setInterval(draw, 40);
-							});
-						}
-					});
-				});
-			}
-		})
-	}
-
-	function renderIntro(text, i) {
-
-		// random intro speeds
-		if (!randInt(3))
-			var sleepTime = 150
-		else
-			var sleepTime = 300
-
-		ctx.font = "22px matrix_courier";
-		ctx.fillStyle = "#7bff8d";
-
-		return sleep(sleepTime).then(() => {
-			output(text[i], (i * 13) + 30, 40)
-			if (i < text.length - 1) {
-				i++;
-				return renderIntro(text, i);
-			} else {
-				return true;
-			}
-		})
-	}
-
-	// set up appropriate no. of columns
-	function resizeCanvas() {
-
-		c.width = window.innerWidth;
-		c.height = window.innerHeight;
-
-		numcols = (c.width / horsize) + 1;  // add 1 for safety
-		vchars = Math.floor(c.height / versize) + 1;
-
-		columns = [];
-		for (var i=0; i < numcols; i++)
-			columns.push(new Column(vchars, numcols));
-	}
+}
 
 
+class Context {
 
-	// drawing the characters
-	function draw() {
+  constructor() {
+    this.c = document.getElementById("c");
+    this.ctx = this.c.getContext("2d");
+  }
 
-		ctx.font = "20px matrix_code";
+  outputChar(char, horpos, verpos) {
+    this.ctx.fillText(char, horpos, verpos);
+  }
 
-		for (var i=0; i < columns.length; i++) {
+  clearChar(horpos, verpos) {
+    this.ctx.clearRect(horpos, verpos, horsize, versize);
+  }
 
-			var col = columns[i];
+  clearScreen() {
+    this.ctx.clearRect(0, 0, this.c.width, this.c.height);
+  }
 
-			if (!col.delay) {
+  async renderIntro(text, i) {
+    // sleep a random amount of time
+    await sleep(!randInt(3) ? 100 : 300);
+    // output char, fixed offset of 30 horizontal, 40 vertical
+    this.outputChar(text[i], (i * (horsize + 2)) + 30, 40);
+    // return when done, otherwise output next character
+    return i === text.length - 1 ? true : this.renderIntro(text, i + 1);
+  }
 
-				for (var j=0; j < vchars; j++) {
+  async intro() {
+    // set font, colour and initial sleep
+    this.ctx.font = "22px matrix_courier";
+    this.ctx.fillStyle = "#7bff8d";
+    await sleep(500);
 
-					var text = col.chars[j];
-					var horpos = i * horsize
-					var verpos = j * versize
-					var verout = verpos + versize  // zero-indexed!
+    // first line
+    await this.renderIntro("Wake up, Neo...".split(""), 0);
+    await sleep(2000);
+    this.clearScreen();
 
-					// different styles: first chars are whiter
-					if (j == col.position) {
-						erase(horpos, verpos);
-						ctx.fillStyle = "#f6f6f4";
-						output(text, horpos, verout);
+    // second line
+    await this.renderIntro("The Matrix has you...".split(""), 0);
+    await sleep(2000);
+    this.clearScreen();
+  }
 
-					} else if (j == col.position - 1) {
-						erase(horpos, verpos);
-						ctx.fillStyle = "#c9cfb9";
-						output(text, horpos, verout);
+  setupCanvas() {
+    // set canvas to the entire window size
+    this.c.width = window.innerWidth;
+    this.c.height = window.innerHeight;
 
-					} else if (j == col.position - 2) {
-						erase(horpos, verpos);
-						ctx.fillStyle = "#95a297";
-						output(text, horpos, verout);
+    // get appropriate num and size of columns
+    this.numCols = Math.floor(this.c.width / horsize) + 1;  // add 1 for safety
+    this.numChars = Math.floor(this.c.height / versize) + 1;
 
-					// the rest of the chars are this colour
-					} else if (j == col.position - 3) {
-						erase(horpos, verpos);
-						ctx.fillStyle = "#2cb231";
-						output(text, horpos, verout);
+    // set columns up
+    this.columns = [];
+    for (let i = 0; i < this.numCols; i++)
+      this.columns.push(new Column(this.numCols, this.numChars));
+  }
 
-					// chars not whiter or fading have a chance of switching
-					} else if (j < col.position - 3 && j >= (col.position - vchars) + 10) {
+  drawScreen() {
+    this.ctx.font = "20px matrix_code";
 
-						if (!randInt(15)) {
-							text = matrixcode[randInt(matrixcode.length)];
-							erase(horpos, verpos);
-							ctx.fillStyle = "#2cb231";
-							output(text, horpos, verout);
-						}
+    for (let i = 0; i < this.columns.length; i++) {
+      const col = this.columns[i];
 
-					// gradually fade out chars once column has passed by
-					} else if (j < (col.position - vchars) + 10 && j > col.position - vchars - 10) {
+      // if there is still a delay, decrement and skip output
+      if (col.delay) {
+        col.delay--;
+        continue;
+      }
 
-						// random fading
-						if (!randInt(5))
-							ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-						else
-							ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      for (let j = 0; j < col.chars.length; j++) {
+        const char = col.chars[j];
+        const horpos = i * horsize
+        const verpos = j * versize
+        const verout = verpos + versize  // zero-indexed!
 
-						ctx.fillRect(i * horsize, j * versize, horsize, versize);
+        // different styles: first chars are whiter
+        if (j > col.position) {
+          break;
+        }
+        else if (j === col.position) {
+          this.clearChar(horpos, verpos);
+          this.ctx.fillStyle = "#f6f6f4";
+          this.outputChar(char, horpos, verout);
 
-					// definitely clear by this point
-					} else if (j == col.position - vchars - 10)
-						erase(horpos, verpos);
-				}
+        } else if (j === col.position - 1) {
+          this.clearChar(horpos, verpos);
+          this.ctx.fillStyle = "#c9cfb9";
+          this.outputChar(char, horpos, verout);
 
-				col.delay = col.speed;
-				col.position++;
+        } else if (j === col.position - 2) {
+          this.clearChar(horpos, verpos);
+          this.ctx.fillStyle = "#95a297";
+          this.outputChar(char, horpos, verout);
 
-			} else
-				col.delay--;
+        // the rest of the chars are this colour
+        } else if (j === col.position - 3) {
+          this.clearChar(horpos, verpos);
+          this.ctx.fillStyle = "#2cb231";
+          this.outputChar(char, horpos, verout);
 
-			// once column is completely off screen: assign a
-			// random delay, regenerate contents, and send to top
-			if (col.position > (vchars * 2) + 15) {
-				col.newchars(vchars);
-				col.position = 0;
-				col.delay = randInt(numcols * density);
-			}
+        // chars not whiter or fading have a chance of switching
+        } else if (j < col.position - 3 && j >= (col.position - this.numChars + 10) && !randInt(15)) {
+          const newChar = matrixAlphabet[randInt(matrixAlphabet.length)];
+          this.clearChar(horpos, verpos);
+          this.ctx.fillStyle = "#2cb231";
+          this.outputChar(newChar, horpos, verout);
 
-		}
-	}
+        // gradually fade out chars once column has passed by
+        } else if (j < (col.position - this.numChars + 10) && j > (col.position - this.numChars - 10)) {
+          this.ctx.fillStyle = !randInt(5) ? "rgba(0, 0, 0, 0.30)": "rgba(0, 0, 0, 0.05)";  // random fading
+          this.ctx.fillRect(i * horsize, j * versize, horsize, versize);
 
-	// kick off after delay
-	sleep(1000).then(() => {
-		intro();
-	});
+        // definitely clear by this point
+        } else if (j === (col.position - this.numChars - 10))
+          this.clearChar(horpos, verpos);
+      }
+
+      col.delay = col.speed;
+      col.position++;
+
+      // once column is completely off screen: assign a random delay, regenerate contents, and reset to top
+      if (col.position > (this.numChars * 2) + 10) {
+        col.setChars(this.numChars);
+        col.position = 0;
+        col.delay = randInt(this.numCols * rainDensity / 2);
+      }
+    }
+
+  }
+
+}
+
+
+window.addEventListener("load", async function () {
+  let context = new Context();
+  await context.intro();
+  window.addEventListener("resize", context.setupCanvas.bind(context), false);
+  context.setupCanvas();
+  window.setInterval(context.drawScreen.bind(context), 40);
 });
